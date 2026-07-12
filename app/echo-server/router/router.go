@@ -3,12 +3,24 @@ package router
 import (
 	"net/http"
 
+	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB) {
+func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrlQueue *queueCtrl.Controller, ctrlCalculator *calculatorCtrl.Controller) {
 	e.GET("/ping", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "pong"})
 	})
+
+	jwtMiddleware := middleware.JWTMiddleware2(jwtSecret)
+
+	e.POST("/calculator/simulate", ctrlCalculator.Simulate, jwtMiddleware)
+
+	e.POST("/queue", ctrlQueue.Create, jwtMiddleware)
+	e.GET("/queue/:id", ctrlQueue.Get, jwtMiddleware)
+	e.GET("/admin/queue", ctrlQueue.AdminList, jwtMiddleware)
+	e.PATCH("/admin/queue/:id/verify", ctrlQueue.AdminVerify, jwtMiddleware)
 }

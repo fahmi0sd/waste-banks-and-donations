@@ -10,7 +10,13 @@ import (
 	"time"
 
 	"github.com/fahmi0sd/go-utils/postgres"
+	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
+	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
+	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
+	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
+	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -28,6 +34,16 @@ func main() {
 	// Config
 	jwtSecret := os.Getenv("JWT_SECRET")
 
+	// Queue
+	qRepo := queueRepo.NewGormRepository(database)
+	qSvc := queueSvc.NewService(logger, qRepo)
+	qCtrl := queueCtrl.NewController(logger, qSvc)
+
+	// Calculator
+	calcRepo := calculatorRepo.NewGormRepository(database)
+	calcSvc := calculatorSvc.NewService(logger, calcRepo)
+	calcCtrl := calculatorCtrl.NewController(logger, calcSvc)
+
 	// Echo
 	e := echo.New()
 	e.HideBanner = true
@@ -40,7 +56,7 @@ func main() {
 	}))
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	router.RegisterPath(e, jwtSecret, database)
+	router.RegisterPath(e, jwtSecret, database, qCtrl, calcCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {

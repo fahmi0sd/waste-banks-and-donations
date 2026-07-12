@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS locations (
     latitude   DECIMAL(10, 7),
     longitude  DECIMAL(10, 7),
     is_open    BOOLEAN      NOT NULL DEFAULT true,
+    open_time  VARCHAR(5)   NOT NULL DEFAULT '08:00', 
+    close_time VARCHAR(5)   NOT NULL DEFAULT '16:00',
     created_at TIMESTAMP    DEFAULT NOW()
 );
 
@@ -130,4 +132,31 @@ CREATE TABLE IF NOT EXISTS campaign_update (
     content         TEXT NOT NULL,
     report_file_url TEXT,
     published_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- Create table notification_log 
+CREATE TABLE IF NOT EXISTS notification_log (
+    id      SERIAL PRIMARY KEY,
+    user_id INT         NOT NULL REFERENCES users(id),
+    type    VARCHAR(30) NOT NULL
+            CHECK (type IN ('deposit_update', 'donation_update')),
+    channel VARCHAR(10) NOT NULL
+            CHECK (channel IN ('email', 'wa')),
+    content TEXT        NOT NULL,
+    status  VARCHAR(10) NOT NULL DEFAULT 'sent'
+            CHECK (status IN ('sent', 'failed')),
+    sent_at TIMESTAMP DEFAULT NOW()
+);
+ 
+-- Create table backup_log 
+CREATE TABLE IF NOT EXISTS backup_log (
+    id                   SERIAL PRIMARY KEY,
+    triggered_by         VARCHAR(10) NOT NULL
+                         CHECK (triggered_by IN ('scheduler', 'manual')),
+    triggered_by_user_id INT REFERENCES users(id),
+    status               VARCHAR(10) NOT NULL
+                         CHECK (status IN ('success', 'failed')),
+    file_size_bytes      BIGINT,
+    started_at           TIMESTAMP NOT NULL DEFAULT NOW(),
+    finished_at          TIMESTAMP
 );
