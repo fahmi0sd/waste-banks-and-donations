@@ -12,11 +12,14 @@ import (
 	"github.com/fahmi0sd/go-utils/postgres"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	wastetransactionCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/waste-transaction"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
+	wastetransactionRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/waste-transaction"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
+	wastetransactionSvc "github.com/fahmi0sd/waste-banks-and-donations/service/waste-transaction"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -44,6 +47,11 @@ func main() {
 	calcSvc := calculatorSvc.NewService(logger, calcRepo)
 	calcCtrl := calculatorCtrl.NewController(logger, calcSvc)
 
+	// Waste Transaction
+	wtRepo := wastetransactionRepo.NewGormRepository(database)
+	wtSvc := wastetransactionSvc.NewService(logger, wtRepo, database)
+	wtCtrl := wastetransactionCtrl.NewController(logger, wtSvc)
+
 	// Echo
 	e := echo.New()
 	e.HideBanner = true
@@ -56,7 +64,7 @@ func main() {
 	}))
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	router.RegisterPath(e, jwtSecret, database, qCtrl, calcCtrl)
+	router.RegisterPath(e, jwtSecret, database, qCtrl, calcCtrl, wtCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {
