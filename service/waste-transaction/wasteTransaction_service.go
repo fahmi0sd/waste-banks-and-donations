@@ -15,15 +15,19 @@ type Service interface {
 	LocationHistory(adminID, locationID int) ([]WasteTransaction, error)
 	Cancel(adminID, transactionID int) (WasteTransaction, error)
 }
-
-type service struct {
-	logger *slog.Logger
-	repo   Repository
-	db     *gorm.DB
+type NotificationSender interface {
+	NotifyDepositUpdate(userID int, amount float64) error
 }
 
-func NewService(logger *slog.Logger, repo Repository, db *gorm.DB) Service {
-	return &service{logger: logger, repo: repo, db: db}
+type service struct {
+	logger   *slog.Logger
+	repo     Repository
+	db       *gorm.DB
+	notifier NotificationSender
+}
+
+func NewService(logger *slog.Logger, repo Repository, db *gorm.DB, notifier NotificationSender) Service {
+	return &service{logger: logger, repo: repo, db: db, notifier: notifier}
 }
 
 func (s *service) Create(adminID, queueID int, items []ItemInput) (WasteTransaction, error) {
@@ -71,12 +75,18 @@ func (s *service) Create(adminID, queueID int, items []ItemInput) (WasteTransact
 	result, err := s.repo.CreateWithEffects(input)
 	if err != nil {
 		s.logger.Error("failed to create transaction", "error", err, "queue_id", queueID)
-		return WasteTransaction{}, err
+		return WasteTransaction{}, err // pesan dari repo sudah cukup jelas (lihat repository)
 	}
 
 	details, err := s.repo.GetDetailsByTransactionID(result.ID)
 	if err == nil {
 		result.Details = details
+	}
+
+	if s.notifier != nil {
+		if notifErr := s.notifier.NotifyDepositUpdate(result.UserID, result.TotalRupiah); notifErr != nil {
+			s.logger.Error("failed to send deposit notification", "error", notifErr, "user_id", result.UserID)
+		}
 	}
 
 	return result, nil
