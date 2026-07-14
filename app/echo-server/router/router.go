@@ -3,6 +3,7 @@ package router
 import (
 	"net/http"
 
+	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
@@ -10,17 +11,28 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrlQueue *queueCtrl.Controller, ctrlCalculator *calculatorCtrl.Controller) {
+type Controllers struct {
+	Auth       *authCtrl.Controller
+	Queue      *queueCtrl.Controller
+	Calculator *calculatorCtrl.Controller
+}
+
+func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers) {
 	e.GET("/ping", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "pong"})
 	})
 
 	jwtMiddleware := middleware.JWTMiddleware2(jwtSecret)
 
-	e.POST("/calculator/simulate", ctrlCalculator.Simulate, jwtMiddleware)
+	// M2 #1, #2 - Auth (publik)
+	e.POST("/auth/register", ctrls.Auth.Register)
+	e.POST("/auth/login", ctrls.Auth.Login)
 
-	e.POST("/queue", ctrlQueue.Create, jwtMiddleware)
-	e.GET("/queue/:id", ctrlQueue.Get, jwtMiddleware)
-	e.GET("/admin/queue", ctrlQueue.AdminList, jwtMiddleware)
-	e.PATCH("/admin/queue/:id/verify", ctrlQueue.AdminVerify, jwtMiddleware)
+	// Calculator & Queue (sudah ada sebelumnya)
+	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)
+
+	e.POST("/queue", ctrls.Queue.Create, jwtMiddleware)
+	e.GET("/queue/:id", ctrls.Queue.Get, jwtMiddleware)
+	e.GET("/admin/queue", ctrls.Queue.AdminList, jwtMiddleware)
+	e.PATCH("/admin/queue/:id/verify", ctrls.Queue.AdminVerify, jwtMiddleware)
 }

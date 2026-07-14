@@ -7,14 +7,18 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/fahmi0sd/go-utils/postgres"
+	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
+	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
+	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
 	"github.com/joho/godotenv"
@@ -33,6 +37,15 @@ func main() {
 
 	// Config
 	jwtSecret := os.Getenv("JWT_SECRET")
+	jwtTTLHours, err := strconv.Atoi(os.Getenv("JWT_EXPIRY_HOURS"))
+	if err != nil || jwtTTLHours <= 0 {
+		jwtTTLHours = 24
+	}
+
+	// Auth (M2 #1, #2)
+	aRepo := authRepo.NewGormRepository(database)
+	aSvc := authSvc.NewService(logger, aRepo, jwtSecret, jwtTTLHours)
+	aCtrl := authCtrl.NewController(logger, aSvc)
 
 	// Queue
 	qRepo := queueRepo.NewGormRepository(database)
@@ -56,7 +69,11 @@ func main() {
 	}))
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	router.RegisterPath(e, jwtSecret, database, qCtrl, calcCtrl)
+	router.RegisterPath(e, jwtSecret, database, router.Controllers{
+		Auth:       aCtrl,
+		Queue:      qCtrl,
+		Calculator: calcCtrl,
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
