@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"github.com/fahmi0sd/waste-banks-and-donations/pkg"
 	"github.com/fahmi0sd/waste-banks-and-donations/service/queue"
 	"gorm.io/gorm"
 )
@@ -80,17 +81,9 @@ func (r *GormRepository) LocationInfo(locationID int) (exists bool, isOpen bool,
 }
 
 func (r *GormRepository) AdminLocation(userID int) (role string, locationID *int, err error) {
-	type row struct {
-		Role       string
-		LocationID *int
-	}
-	var res row
-	dbErr := r.db.Table("users").
-		Select("role, location_id").
-		Where("id = ?", userID).
-		Take(&res).Error
+	identity, dbErr := pkg.GetUserIdentity(r.db, userID)
 	if dbErr != nil {
 		return "", nil, dbErr
 	}
-	return res.Role, res.LocationID, nil
+	return identity.Role, identity.LocationID, nil
 }
