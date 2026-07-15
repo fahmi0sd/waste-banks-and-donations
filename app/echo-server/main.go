@@ -17,6 +17,7 @@ import (
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	priceCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/price"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	reportCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/report"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
@@ -25,6 +26,7 @@ import (
 	locationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/location"
 	priceRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/price"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
+	reportRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/report"
 	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
@@ -32,6 +34,7 @@ import (
 	locationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/location"
 	priceSvc "github.com/fahmi0sd/waste-banks-and-donations/service/price"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
+	reportSvc "github.com/fahmi0sd/waste-banks-and-donations/service/report"
 	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -79,6 +82,11 @@ func main() {
 	priceService := priceSvc.NewService(logger, priceRepository)
 	priceController := priceCtrl.NewController(logger, priceService)
 
+	// Report (M11)
+	repRepo := reportRepo.NewGormRepository(database)
+	repSvc := reportSvc.NewService(logger, repRepo)
+	repCtrl := reportCtrl.NewController(logger, repSvc)
+
 	// Queue
 	qRepo := queueRepo.NewGormRepository(database)
 	qSvc := queueSvc.NewService(logger, qRepo)
@@ -107,6 +115,7 @@ func main() {
 		Location:   lCtrl,
 		Category:   catCtrl,
 		Price:      priceController,
+		Report:     repCtrl,
 		Queue:      qCtrl,
 		Calculator: calcCtrl,
 	})

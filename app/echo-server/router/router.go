@@ -9,6 +9,7 @@ import (
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	priceCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/price"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	reportCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/report"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
 	"github.com/labstack/echo/v4"
@@ -21,6 +22,7 @@ type Controllers struct {
 	Location   *locationCtrl.Controller
 	Category   *categoryCtrl.Controller
 	Price      *priceCtrl.Controller
+	Report     *reportCtrl.Controller
 	Queue      *queueCtrl.Controller
 	Calculator *calculatorCtrl.Controller
 }
@@ -60,6 +62,9 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.GET("/categories/:id/price", ctrls.Price.ActivePrice)
 	e.GET("/categories/:id/price/history", ctrls.Price.History, jwtMiddleware)
 	e.POST("/categories/:id/price", ctrls.Price.SetPrice, jwtMiddleware)
+
+	// M11 - Laporan transaksi (agregasi per lokasi/tanggal)
+	e.GET("/admin/reports/transactions", ctrls.Report.TransactionReport, jwtMiddleware)
 
 	// M3 #10 - CRUD akun admin/user oleh master admin
 	e.GET("/admin/users", ctrls.User.AdminList, jwtMiddleware)
