@@ -17,12 +17,10 @@ type Profile struct {
 }
 
 type UpdateProfileRequest struct {
-	Name       *string `json:"name" validate:"omitempty,min=2,max=255"`
-	Phone      *string `json:"phone" validate:"omitempty,min=8,max=20"`
-	LocationID *int    `json:"location_id" validate:"omitempty,gt=0"`
+	Name  *string `json:"name" validate:"omitempty,min=2,max=255"`
+	Phone *string `json:"phone" validate:"omitempty,min=8,max=20"`
 }
 
-// CreateAccountRequest dipakai master_admin untuk membuat akun user/admin baru.
 type CreateAccountRequest struct {
 	Name       string `json:"name" validate:"required,min=2,max=255"`
 	Email      string `json:"email" validate:"required,email,max=255"`
@@ -32,7 +30,6 @@ type CreateAccountRequest struct {
 	LocationID *int   `json:"location_id" validate:"omitempty,gt=0"`
 }
 
-// UpdateAccountRequest dipakai master_admin untuk mengubah akun user/admin.
 type UpdateAccountRequest struct {
 	Name       *string `json:"name" validate:"omitempty,min=2,max=255"`
 	Phone      *string `json:"phone" validate:"omitempty,min=8,max=20"`

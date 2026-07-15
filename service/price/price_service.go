@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	roleAdmin       = "admin"
 	roleMasterAdmin = "master_admin"
 )
 
@@ -25,14 +24,14 @@ func NewService(logger *slog.Logger, repo Repository) Service {
 	return &service{logger: logger, repo: repo}
 }
 
-func (s *service) requireAdmin(requesterID int) error {
+func (s *service) requireMasterAdmin(requesterID int) error {
 	role, err := s.repo.RoleOf(requesterID)
 	if err != nil {
 		s.logger.Error("failed to resolve requester role", "error", err, "user_id", requesterID)
 		return errors.New("gagal memverifikasi akses")
 	}
-	if role != roleAdmin && role != roleMasterAdmin {
-		return errors.New("akses ditolak: hanya admin yang bisa mengatur harga sampah")
+	if role != roleMasterAdmin {
+		return errors.New("akses ditolak: hanya master admin yang bisa mengatur harga sampah")
 	}
 	return nil
 }
@@ -40,7 +39,7 @@ func (s *service) requireAdmin(requesterID int) error {
 // SetPrice menutup harga aktif sebelumnya (jika ada) lalu menyimpan harga baru
 // sehingga histori perubahan harga tetap tersimpan di tabel waste_price.
 func (s *service) SetPrice(requesterID, categoryID int, req SetPriceRequest) (Price, error) {
-	if err := s.requireAdmin(requesterID); err != nil {
+	if err := s.requireMasterAdmin(requesterID); err != nil {
 		return Price{}, err
 	}
 

@@ -28,20 +28,38 @@ func NewService(logger *slog.Logger, repo Repository) Service {
 	return &service{logger: logger, repo: repo}
 }
 
-func (s *service) requireAdmin(requesterID int) error {
-	role, err := s.repo.RoleOf(requesterID)
+func (s *service) requireMasterAdmin(requesterID int) error {
+	role, _, err := s.repo.RoleAndLocation(requesterID)
 	if err != nil {
 		s.logger.Error("failed to resolve requester role", "error", err, "user_id", requesterID)
 		return errors.New("gagal memverifikasi akses")
 	}
-	if role != roleAdmin && role != roleMasterAdmin {
-		return errors.New("akses ditolak: hanya admin yang bisa mengelola lokasi")
+	if role != roleMasterAdmin {
+		return errors.New("akses ditolak: hanya master admin yang bisa mengelola daftar lokasi")
+	}
+	return nil
+}
+
+func (s *service) requireOwnLocationOrMasterAdmin(requesterID, targetLocationID int) error {
+	role, locationID, err := s.repo.RoleAndLocation(requesterID)
+	if err != nil {
+		s.logger.Error("failed to resolve requester role", "error", err, "user_id", requesterID)
+		return errors.New("gagal memverifikasi akses")
+	}
+	if role == roleMasterAdmin {
+		return nil
+	}
+	if role != roleAdmin {
+		return errors.New("akses ditolak: hanya admin yang bisa mengubah status lokasi")
+	}
+	if locationID == nil || *locationID != targetLocationID {
+		return errors.New("akses ditolak: kamu cuma bisa mengubah status lokasi tempat kamu bertugas")
 	}
 	return nil
 }
 
 func (s *service) Create(requesterID int, req CreateRequest) (Location, error) {
-	if err := s.requireAdmin(requesterID); err != nil {
+	if err := s.requireMasterAdmin(requesterID); err != nil {
 		return Location{}, err
 	}
 
@@ -94,7 +112,7 @@ func (s *service) Get(id int) (Location, error) {
 }
 
 func (s *service) Update(requesterID, id int, req UpdateRequest) (Location, error) {
-	if err := s.requireAdmin(requesterID); err != nil {
+	if err := s.requireMasterAdmin(requesterID); err != nil {
 		return Location{}, err
 	}
 	if _, found, err := s.repo.GetByID(id); err != nil {
@@ -111,7 +129,7 @@ func (s *service) Update(requesterID, id int, req UpdateRequest) (Location, erro
 }
 
 func (s *service) Delete(requesterID, id int) error {
-	if err := s.requireAdmin(requesterID); err != nil {
+	if err := s.requireMasterAdmin(requesterID); err != nil {
 		return err
 	}
 	if _, found, err := s.repo.GetByID(id); err != nil {
@@ -127,9 +145,8 @@ func (s *service) Delete(requesterID, id int) error {
 	return nil
 }
 
-// ToggleOpen membalik status buka/tutup lokasi (M3 #9).
 func (s *service) ToggleOpen(requesterID, id int) (Location, error) {
-	if err := s.requireAdmin(requesterID); err != nil {
+	if err := s.requireOwnLocationOrMasterAdmin(requesterID, id); err != nil {
 		return Location{}, err
 	}
 	l, found, err := s.repo.GetByID(id)

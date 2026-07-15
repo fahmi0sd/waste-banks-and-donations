@@ -130,8 +130,15 @@ func (r *GormRepository) SetOpen(id int, isOpen bool) error {
 	return r.db.Table("locations").Where("id = ?", id).Update("is_open", isOpen).Error
 }
 
-func (r *GormRepository) RoleOf(userID int) (string, error) {
-	var role string
-	err := r.db.Table("users").Select("role").Where("id = ?", userID).Take(&role).Error
-	return role, err
+func (r *GormRepository) RoleAndLocation(userID int) (string, *int, error) {
+	type row struct {
+		Role       string
+		LocationID *int
+	}
+	var res row
+	err := r.db.Table("users").Select("role, location_id").Where("id = ?", userID).Take(&res).Error
+	if err != nil {
+		return "", nil, err
+	}
+	return res.Role, res.LocationID, nil
 }
