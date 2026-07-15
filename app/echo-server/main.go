@@ -13,15 +13,18 @@ import (
 	"github.com/fahmi0sd/go-utils/postgres"
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
+	locationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/location"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
 	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
+	locationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/location"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
 	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
 	"github.com/joho/godotenv"
@@ -55,6 +58,11 @@ func main() {
 	uSvc := userSvc.NewService(logger, uRepo)
 	uCtrl := userCtrl.NewController(logger, uSvc)
 
+	// Location (M3 #5)
+	lRepo := locationRepo.NewGormRepository(database)
+	lSvc := locationSvc.NewService(logger, lRepo)
+	lCtrl := locationCtrl.NewController(logger, lSvc)
+
 	// Queue
 	qRepo := queueRepo.NewGormRepository(database)
 	qSvc := queueSvc.NewService(logger, qRepo)
@@ -80,6 +88,7 @@ func main() {
 	router.RegisterPath(e, jwtSecret, database, router.Controllers{
 		Auth:       aCtrl,
 		User:       uCtrl,
+		Location:   lCtrl,
 		Queue:      qCtrl,
 		Calculator: calcCtrl,
 	})
