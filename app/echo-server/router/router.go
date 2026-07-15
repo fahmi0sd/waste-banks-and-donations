@@ -5,6 +5,7 @@ import (
 
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
@@ -17,6 +18,7 @@ type Controllers struct {
 	Auth       *authCtrl.Controller
 	User       *userCtrl.Controller
 	Location   *locationCtrl.Controller
+	Category   *categoryCtrl.Controller
 	Queue      *queueCtrl.Controller
 	Calculator *calculatorCtrl.Controller
 }
@@ -42,6 +44,13 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.POST("/locations", ctrls.Location.Create, jwtMiddleware)
 	e.PATCH("/locations/:id", ctrls.Location.Update, jwtMiddleware)
 	e.DELETE("/locations/:id", ctrls.Location.Delete, jwtMiddleware)
+
+	// M3 #6 - CRUD kategori sampah
+	e.GET("/categories", ctrls.Category.List)
+	e.GET("/categories/:id", ctrls.Category.Get)
+	e.POST("/categories", ctrls.Category.Create, jwtMiddleware)
+	e.PATCH("/categories/:id", ctrls.Category.Update, jwtMiddleware)
+	e.DELETE("/categories/:id", ctrls.Category.Delete, jwtMiddleware)
 
 	// Calculator & Queue (sudah ada sebelumnya)
 	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)

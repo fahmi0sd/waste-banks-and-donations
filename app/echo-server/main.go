@@ -13,17 +13,20 @@ import (
 	"github.com/fahmi0sd/go-utils/postgres"
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
+	categoryRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/category"
 	locationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/location"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
 	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
+	categorySvc "github.com/fahmi0sd/waste-banks-and-donations/service/category"
 	locationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/location"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
 	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
@@ -63,6 +66,11 @@ func main() {
 	lSvc := locationSvc.NewService(logger, lRepo)
 	lCtrl := locationCtrl.NewController(logger, lSvc)
 
+	// Category (M3 #6)
+	catRepo := categoryRepo.NewGormRepository(database)
+	catSvc := categorySvc.NewService(logger, catRepo)
+	catCtrl := categoryCtrl.NewController(logger, catSvc)
+
 	// Queue
 	qRepo := queueRepo.NewGormRepository(database)
 	qSvc := queueSvc.NewService(logger, qRepo)
@@ -89,6 +97,7 @@ func main() {
 		Auth:       aCtrl,
 		User:       uCtrl,
 		Location:   lCtrl,
+		Category:   catCtrl,
 		Queue:      qCtrl,
 		Calculator: calcCtrl,
 	})
