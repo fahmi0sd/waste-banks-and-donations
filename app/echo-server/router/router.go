@@ -6,13 +6,15 @@ import (
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	walletCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/wallet"
 	wastetransactionCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/waste-transaction"
+
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrlQueue *queueCtrl.Controller, ctrlCalculator *calculatorCtrl.Controller, ctrlWasteTransaction *wastetransactionCtrl.Controller, ctrlNotification *notificationCtrl.Controller) {
+func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrlQueue *queueCtrl.Controller, ctrlCalculator *calculatorCtrl.Controller, ctrlWasteTransaction *wastetransactionCtrl.Controller, ctrlNotification *notificationCtrl.Controller, ctrlWallet *walletCtrl.Controller) {
 	e.GET("/ping", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "pong"})
 	})
@@ -33,4 +35,9 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrlQueue *queueC
 	e.PATCH("/admin/waste-transactions/:id/status", ctrlWasteTransaction.UpdateStatus, jwtMiddleware)
 
 	e.GET("/users/me/notifications", ctrlNotification.MyNotifications, jwtMiddleware)
+
+	// Wallet
+	e.GET("/users/me/wallet", ctrlWallet.GetWallet, jwtMiddleware)
+	e.GET("/users/me/wallet/transactions", ctrlWallet.GetTransactions, jwtMiddleware)
+	e.POST("/users/me/wallet/withdraw", ctrlWallet.Withdraw, jwtMiddleware)
 }

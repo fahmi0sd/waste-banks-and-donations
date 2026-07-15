@@ -13,17 +13,21 @@ import (
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	walletCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/wallet"
 	wastetransactionCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/waste-transaction"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	"github.com/fahmi0sd/waste-banks-and-donations/pkg"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	notificationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/notification"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
+	walletRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/wallet"
 	wastetransactionRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/waste-transaction"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	notificationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/notification"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
+	walletSvc "github.com/fahmi0sd/waste-banks-and-donations/service/wallet"
 	wastetransactionSvc "github.com/fahmi0sd/waste-banks-and-donations/service/waste-transaction"
+
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -73,6 +77,11 @@ func main() {
 	wtSvc := wastetransactionSvc.NewService(logger, wtRepo, database, notifSvc)
 	wtCtrl := wastetransactionCtrl.NewController(logger, wtSvc)
 
+	// Wallet
+	wRepo := walletRepo.NewGormRepository(database)
+	wSvc := walletSvc.NewService(logger, wRepo)
+	wCtrl := walletCtrl.NewController(logger, wSvc)
+
 	// Echo
 	e := echo.New()
 	e.HideBanner = true
@@ -85,7 +94,7 @@ func main() {
 	}))
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	router.RegisterPath(e, jwtSecret, database, qCtrl, calcCtrl, wtCtrl, notifCtrl)
+	router.RegisterPath(e, jwtSecret, database, qCtrl, calcCtrl, wtCtrl, notifCtrl, wCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {
