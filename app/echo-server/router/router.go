@@ -7,6 +7,7 @@ import (
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
+	priceCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/price"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
@@ -19,6 +20,7 @@ type Controllers struct {
 	User       *userCtrl.Controller
 	Location   *locationCtrl.Controller
 	Category   *categoryCtrl.Controller
+	Price      *priceCtrl.Controller
 	Queue      *queueCtrl.Controller
 	Calculator *calculatorCtrl.Controller
 }
@@ -51,6 +53,11 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.POST("/categories", ctrls.Category.Create, jwtMiddleware)
 	e.PATCH("/categories/:id", ctrls.Category.Update, jwtMiddleware)
 	e.DELETE("/categories/:id", ctrls.Category.Delete, jwtMiddleware)
+
+	// M3 #7 - Manajemen harga dengan histori
+	e.GET("/categories/:id/price", ctrls.Price.ActivePrice)
+	e.GET("/categories/:id/price/history", ctrls.Price.History, jwtMiddleware)
+	e.POST("/categories/:id/price", ctrls.Price.SetPrice, jwtMiddleware)
 
 	// Calculator & Queue (sudah ada sebelumnya)
 	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)
