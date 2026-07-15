@@ -98,7 +98,7 @@ func (ctrl *Controller) Withdraw(c echo.Context) error {
 	if err := ctrl.validate.Struct(req); err != nil {
 		return c.JSON(
 			http.StatusBadRequest,
-			response.Error("amount wajin diisi dan lebih dari 0"),
+			response.Error("amount wajib diisi dan lebih dari 0"),
 		)
 	}
 
