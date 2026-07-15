@@ -13,6 +13,7 @@ import (
 	"github.com/fahmi0sd/go-utils/postgres"
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	campaignCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/campaign"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
@@ -46,6 +47,10 @@ import (
 	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
 	walletSvc "github.com/fahmi0sd/waste-banks-and-donations/service/wallet"
 	wastetransactionSvc "github.com/fahmi0sd/waste-banks-and-donations/service/waste-transaction"
+
+	campaignRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/campaign"
+
+	campaignSvc "github.com/fahmi0sd/waste-banks-and-donations/service/campaign"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -134,6 +139,11 @@ func main() {
 	wSvc := walletSvc.NewService(logger, wRepo)
 	wCtrl := walletCtrl.NewController(logger, wSvc)
 
+	// Campaign
+	campRepo := campaignRepo.NewGormRepository(database)
+	campSvc := campaignSvc.NewService(logger, campRepo, database)
+	campCtrl := campaignCtrl.NewController(logger, campSvc)
+
 	// Echo
 	e := echo.New()
 	e.HideBanner = true
@@ -158,6 +168,7 @@ func main() {
 		WasteTransaction: wtCtrl,
 		Notification:     notifCtrl,
 		Wallet:           wCtrl,
+		Campaign:         campCtrl,
 	})
 
 	port := os.Getenv("PORT")

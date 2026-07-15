@@ -5,6 +5,7 @@ import (
 
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	campaignCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/campaign"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
@@ -33,6 +34,7 @@ type Controllers struct {
 	WasteTransaction *wastetransactionCtrl.Controller
 	Notification     *notificationCtrl.Controller
 	Wallet           *walletCtrl.Controller
+	Campaign         *campaignCtrl.Controller
 }
 
 func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers) {
@@ -99,6 +101,20 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.GET("/users/me/wallet", ctrls.Wallet.GetWallet, jwtMiddleware)
 	e.GET("/users/me/wallet/transactions", ctrls.Wallet.GetTransactions, jwtMiddleware)
 	e.POST("/users/me/wallet/withdraw", ctrls.Wallet.Withdraw, jwtMiddleware)
+
+	// M7 Campaigns
+	// Public
+	e.GET("/campaigns", ctrls.Campaign.List)
+	e.GET("/campaigns/:id", ctrls.Campaign.Get)
+	e.GET("/campaigns/:id/updates", ctrls.Campaign.ListUpdate)
+	// Master Admin
+	e.POST("/master-admin/campaigns", ctrls.Campaign.Create, jwtMiddleware)
+	e.PATCH("/master-admin/campaigns/:id", ctrls.Campaign.Update, jwtMiddleware)
+	e.DELETE("/master-admin/campaigns/:id", ctrls.Campaign.Delete, jwtMiddleware)
+	e.POST("/master-admin/campaigns/:id/updates", ctrls.Campaign.CreateUpdate, jwtMiddleware)
+	// Donation
+	e.POST("/campaigns/:id/donate", ctrls.Campaign.Donate, jwtMiddleware)
+	e.GET("/users/me/donations", ctrls.Campaign.MyDonations, jwtMiddleware)
 
 	// M8 - Notifikasi
 	e.GET("/users/me/notifications", ctrls.Notification.MyNotifications, jwtMiddleware)
