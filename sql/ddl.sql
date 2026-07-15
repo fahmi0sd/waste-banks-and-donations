@@ -82,6 +82,16 @@ CREATE TABLE IF NOT EXISTS waste_transaction_detail (
     subtotal                NUMERIC(12, 2) NOT NULL
 );
 
+-- Create table location_inventory
+CREATE TABLE IF NOT EXISTS location_inventory (
+    id          SERIAL PRIMARY KEY,
+    location_id INT            NOT NULL REFERENCES locations(id),
+    category_id INT            NOT NULL REFERENCES waste_category(id),
+    weight_kg   NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    updated_at  TIMESTAMP DEFAULT NOW(),
+    UNIQUE (location_id, category_id)
+);
+
 -- Create table wallet
 CREATE TABLE IF NOT EXISTS wallet (
     id         SERIAL PRIMARY KEY,
@@ -95,7 +105,7 @@ CREATE TABLE IF NOT EXISTS wallet_transaction (
     id             SERIAL PRIMARY KEY,
     wallet_id      INT            NOT NULL REFERENCES wallet(id),
     type           VARCHAR(20)    NOT NULL
-                   CHECK (type IN ('credit_waste', 'donation_out', 'withdraw')),
+                   CHECK (type IN ('credit_waste', 'donation_out', 'withdraw', 'cancellation')),
     amount         NUMERIC(14, 2) NOT NULL,
     reference_type VARCHAR(50),
     reference_id   INT,

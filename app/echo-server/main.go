@@ -15,27 +15,37 @@ import (
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
+	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
 	priceCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/price"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	reportCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/report"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
+	walletCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/wallet"
+	wastetransactionCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/waste-transaction"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
+	"github.com/fahmi0sd/waste-banks-and-donations/pkg"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	categoryRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/category"
 	locationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/location"
+	notificationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/notification"
 	priceRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/price"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
 	reportRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/report"
 	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
+	walletRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/wallet"
+	wastetransactionRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/waste-transaction"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	categorySvc "github.com/fahmi0sd/waste-banks-and-donations/service/category"
 	locationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/location"
+	notificationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/notification"
 	priceSvc "github.com/fahmi0sd/waste-banks-and-donations/service/price"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
 	reportSvc "github.com/fahmi0sd/waste-banks-and-donations/service/report"
 	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
+	walletSvc "github.com/fahmi0sd/waste-banks-and-donations/service/wallet"
+	wastetransactionSvc "github.com/fahmi0sd/waste-banks-and-donations/service/waste-transaction"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -56,33 +66,44 @@ func main() {
 	if err != nil || jwtTTLHours <= 0 {
 		jwtTTLHours = 24
 	}
+	mailjetAPIKey := os.Getenv("MAILJET_API_KEY")
+	mailjetSecretKey := os.Getenv("MAILJET_SECRET_KEY")
+	mailjetSenderEmail := os.Getenv("MAILJET_SENDER_EMAIL")
+	mailjetSenderName := os.Getenv("MAILJET_SENDER_NAME")
+	if mailjetSenderName == "" {
+		mailjetSenderName = "Bank Sampah & Donasi"
+	}
+	mailjetBaseURL := os.Getenv("MAILJET_BASE_URL")
+	if mailjetBaseURL == "" {
+		mailjetBaseURL = "https://api.mailjet.com/v3.1/send"
+	}
 
-	// Auth (M2 #1, #2)
+	// Auth
 	aRepo := authRepo.NewGormRepository(database)
 	aSvc := authSvc.NewService(logger, aRepo, jwtSecret, jwtTTLHours)
 	aCtrl := authCtrl.NewController(logger, aSvc)
 
-	// User / profil (M2 #4)
+	// User / profil + admin user management
 	uRepo := userRepo.NewGormRepository(database)
 	uSvc := userSvc.NewService(logger, uRepo)
 	uCtrl := userCtrl.NewController(logger, uSvc)
 
-	// Location (M3 #5)
+	// Location
 	lRepo := locationRepo.NewGormRepository(database)
 	lSvc := locationSvc.NewService(logger, lRepo)
 	lCtrl := locationCtrl.NewController(logger, lSvc)
 
-	// Category (M3 #6)
+	// Category
 	catRepo := categoryRepo.NewGormRepository(database)
 	catSvc := categorySvc.NewService(logger, catRepo)
 	catCtrl := categoryCtrl.NewController(logger, catSvc)
 
-	// Price (M3 #7)
+	// Price
 	priceRepository := priceRepo.NewGormRepository(database)
 	priceService := priceSvc.NewService(logger, priceRepository)
 	priceController := priceCtrl.NewController(logger, priceService)
 
-	// Report (M11)
+	// Report
 	repRepo := reportRepo.NewGormRepository(database)
 	repSvc := reportSvc.NewService(logger, repRepo)
 	repCtrl := reportCtrl.NewController(logger, repSvc)
@@ -97,6 +118,22 @@ func main() {
 	calcSvc := calculatorSvc.NewService(logger, calcRepo)
 	calcCtrl := calculatorCtrl.NewController(logger, calcSvc)
 
+	// Notification
+	mailjetClient := pkg.NewMailjetClient(mailjetAPIKey, mailjetSecretKey, mailjetSenderEmail, mailjetSenderName, mailjetBaseURL)
+	notifRepo := notificationRepo.NewGormRepository(database)
+	notifSvc := notificationSvc.NewService(logger, notifRepo, mailjetClient)
+	notifCtrl := notificationCtrl.NewController(logger, notifSvc)
+
+	// Waste Transaction
+	wtRepo := wastetransactionRepo.NewGormRepository(database)
+	wtSvc := wastetransactionSvc.NewService(logger, wtRepo, database, notifSvc)
+	wtCtrl := wastetransactionCtrl.NewController(logger, wtSvc)
+
+	// Wallet
+	wRepo := walletRepo.NewGormRepository(database)
+	wSvc := walletSvc.NewService(logger, wRepo)
+	wCtrl := walletCtrl.NewController(logger, wSvc)
+
 	// Echo
 	e := echo.New()
 	e.HideBanner = true
@@ -110,14 +147,17 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	router.RegisterPath(e, jwtSecret, database, router.Controllers{
-		Auth:       aCtrl,
-		User:       uCtrl,
-		Location:   lCtrl,
-		Category:   catCtrl,
-		Price:      priceController,
-		Report:     repCtrl,
-		Queue:      qCtrl,
-		Calculator: calcCtrl,
+		Auth:             aCtrl,
+		User:             uCtrl,
+		Location:         lCtrl,
+		Category:         catCtrl,
+		Price:            priceController,
+		Report:           repCtrl,
+		Queue:            qCtrl,
+		Calculator:       calcCtrl,
+		WasteTransaction: wtCtrl,
+		Notification:     notifCtrl,
+		Wallet:           wCtrl,
 	})
 
 	port := os.Getenv("PORT")

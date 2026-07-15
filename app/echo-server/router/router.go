@@ -7,24 +7,32 @@ import (
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
+	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
 	priceCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/price"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
 	reportCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/report"
 	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
+	walletCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/wallet"
+	wastetransactionCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/waste-transaction"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
+// Controllers mengumpulkan semua controller supaya RegisterPath tidak perlu
+// daftar parameter yang terus tumbuh tiap modul baru ditambahkan.
 type Controllers struct {
-	Auth       *authCtrl.Controller
-	User       *userCtrl.Controller
-	Location   *locationCtrl.Controller
-	Category   *categoryCtrl.Controller
-	Price      *priceCtrl.Controller
-	Report     *reportCtrl.Controller
-	Queue      *queueCtrl.Controller
-	Calculator *calculatorCtrl.Controller
+	Auth             *authCtrl.Controller
+	User             *userCtrl.Controller
+	Location         *locationCtrl.Controller
+	Category         *categoryCtrl.Controller
+	Price            *priceCtrl.Controller
+	Report           *reportCtrl.Controller
+	Queue            *queueCtrl.Controller
+	Calculator       *calculatorCtrl.Controller
+	WasteTransaction *wastetransactionCtrl.Controller
+	Notification     *notificationCtrl.Controller
+	Wallet           *walletCtrl.Controller
 }
 
 func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers) {
@@ -38,7 +46,7 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.POST("/auth/register", ctrls.Auth.Register)
 	e.POST("/auth/login", ctrls.Auth.Login)
 
-	// M2 #4 - Profil (butuh token, middleware JWT dari #3)
+	// M2 #4 - Profil (butuh token)
 	e.GET("/users/me", ctrls.User.Me, jwtMiddleware)
 	e.PATCH("/users/me", ctrls.User.UpdateMe, jwtMiddleware)
 
@@ -72,11 +80,26 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.PATCH("/admin/users/:id", ctrls.User.AdminUpdate, jwtMiddleware)
 	e.DELETE("/admin/users/:id", ctrls.User.AdminDelete, jwtMiddleware)
 
-	// Calculator & Queue (sudah ada sebelumnya)
+	// M4 - Calculator & Queue
 	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)
 
 	e.POST("/queue", ctrls.Queue.Create, jwtMiddleware)
 	e.GET("/queue/:id", ctrls.Queue.Get, jwtMiddleware)
 	e.GET("/admin/queue", ctrls.Queue.AdminList, jwtMiddleware)
 	e.PATCH("/admin/queue/:id/verify", ctrls.Queue.AdminVerify, jwtMiddleware)
+
+	// M5 - Transaksi Penukaran Sampah
+	e.POST("/admin/waste-transactions", ctrls.WasteTransaction.Create, jwtMiddleware)
+	e.GET("/waste-transactions/:id", ctrls.WasteTransaction.Get, jwtMiddleware)
+	e.GET("/users/me/waste-transactions", ctrls.WasteTransaction.MyHistory, jwtMiddleware)
+	e.GET("/admin/locations/:id/waste-transactions", ctrls.WasteTransaction.LocationHistory, jwtMiddleware)
+	e.PATCH("/admin/waste-transactions/:id/status", ctrls.WasteTransaction.UpdateStatus, jwtMiddleware)
+
+	// M6 - Wallet & Withdraw
+	e.GET("/users/me/wallet", ctrls.Wallet.GetWallet, jwtMiddleware)
+	e.GET("/users/me/wallet/transactions", ctrls.Wallet.GetTransactions, jwtMiddleware)
+	e.POST("/users/me/wallet/withdraw", ctrls.Wallet.Withdraw, jwtMiddleware)
+
+	// M8 - Notifikasi
+	e.GET("/users/me/notifications", ctrls.Notification.MyNotifications, jwtMiddleware)
 }
