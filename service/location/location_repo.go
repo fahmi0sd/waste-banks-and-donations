@@ -8,6 +8,5 @@ type Repository interface {
 	Delete(id int) error
 	SetOpen(id int, isOpen bool) error
 
-	// dipakai untuk otorisasi: hanya admin/master_admin yang boleh kelola lokasi
-	RoleOf(userID int) (string, error)
+	RoleAndLocation(userID int) (role string, locationID *int, err error)
 }

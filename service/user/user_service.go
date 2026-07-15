@@ -39,7 +39,7 @@ func (s *service) GetProfile(userID int) (Profile, error) {
 }
 
 func (s *service) UpdateProfile(userID int, req UpdateProfileRequest) (Profile, error) {
-	if err := s.repo.UpdateProfile(userID, req.Name, req.Phone, req.LocationID); err != nil {
+	if err := s.repo.UpdateProfile(userID, req.Name, req.Phone); err != nil {
 		s.logger.Error("failed to update profile", "error", err, "user_id", userID)
 		return Profile{}, errors.New("gagal memperbarui profil")
 	}

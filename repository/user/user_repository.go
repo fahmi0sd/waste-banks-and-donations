@@ -49,16 +49,13 @@ func (r *GormRepository) FindByID(id int) (user.Profile, bool, error) {
 	return toProfile(res), true, nil
 }
 
-func (r *GormRepository) UpdateProfile(id int, name, phone *string, locationID *int) error {
+func (r *GormRepository) UpdateProfile(id int, name, phone *string) error {
 	values := map[string]interface{}{"updated_at": time.Now()}
 	if name != nil {
 		values["name"] = *name
 	}
 	if phone != nil {
 		values["phone"] = *phone
-	}
-	if locationID != nil {
-		values["location_id"] = *locationID
 	}
 	return r.db.Table("users").Where("id = ?", id).Updates(values).Error
 }
