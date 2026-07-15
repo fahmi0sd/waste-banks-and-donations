@@ -16,6 +16,7 @@ type Service interface {
 	Get(id int) (Location, error)
 	Update(requesterID, id int, req UpdateRequest) (Location, error)
 	Delete(requesterID, id int) error
+	ToggleOpen(requesterID, id int) (Location, error)
 }
 
 type service struct {
@@ -124,4 +125,24 @@ func (s *service) Delete(requesterID, id int) error {
 		return errors.New("gagal menghapus lokasi")
 	}
 	return nil
+}
+
+// ToggleOpen membalik status buka/tutup lokasi (M3 #9).
+func (s *service) ToggleOpen(requesterID, id int) (Location, error) {
+	if err := s.requireAdmin(requesterID); err != nil {
+		return Location{}, err
+	}
+	l, found, err := s.repo.GetByID(id)
+	if err != nil {
+		return Location{}, errors.New("gagal memeriksa lokasi")
+	}
+	if !found {
+		return Location{}, errors.New("lokasi tidak ditemukan")
+	}
+
+	if err := s.repo.SetOpen(id, !l.IsOpen); err != nil {
+		s.logger.Error("failed to toggle location", "error", err, "id", id)
+		return Location{}, errors.New("gagal mengubah status lokasi")
+	}
+	return s.Get(id)
 }

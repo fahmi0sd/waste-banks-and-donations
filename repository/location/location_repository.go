@@ -126,6 +126,10 @@ func (r *GormRepository) Delete(id int) error {
 	return r.db.Table("locations").Where("id = ?", id).Delete(nil).Error
 }
 
+func (r *GormRepository) SetOpen(id int, isOpen bool) error {
+	return r.db.Table("locations").Where("id = ?", id).Update("is_open", isOpen).Error
+}
+
 func (r *GormRepository) RoleOf(userID int) (string, error) {
 	var role string
 	err := r.db.Table("users").Select("role").Where("id = ?", userID).Take(&role).Error

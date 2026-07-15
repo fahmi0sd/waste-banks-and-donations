@@ -46,6 +46,8 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.POST("/locations", ctrls.Location.Create, jwtMiddleware)
 	e.PATCH("/locations/:id", ctrls.Location.Update, jwtMiddleware)
 	e.DELETE("/locations/:id", ctrls.Location.Delete, jwtMiddleware)
+	// M3 #9 - toggle buka/tutup lokasi
+	e.PATCH("/locations/:id/toggle", ctrls.Location.Toggle, jwtMiddleware)
 
 	// M3 #6 - CRUD kategori sampah
 	e.GET("/categories", ctrls.Category.List)

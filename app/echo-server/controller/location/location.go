@@ -97,3 +97,19 @@ func (ctrl *Controller) Delete(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, response.Success("lokasi berhasil dihapus", nil))
 }
+
+// Toggle menangani PATCH /locations/:id/toggle — buka/tutup lokasi (M3 #9).
+func (ctrl *Controller) Toggle(c echo.Context) error {
+	requesterID := auth.UserID(c)
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Error("id lokasi tidak valid"))
+	}
+
+	updated, err := ctrl.service.ToggleOpen(requesterID, id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Error(err.Error()))
+	}
+	return c.JSON(http.StatusOK, response.Success("status lokasi berhasil diubah", updated))
+}
