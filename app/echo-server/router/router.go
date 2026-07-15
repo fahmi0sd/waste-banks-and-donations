@@ -3,34 +3,103 @@ package router
 import (
 	"net/http"
 
+	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
+	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
+	priceCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/price"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	reportCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/report"
+	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
+	walletCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/wallet"
 	wastetransactionCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/waste-transaction"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/middleware"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
-func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrlQueue *queueCtrl.Controller, ctrlCalculator *calculatorCtrl.Controller, ctrlWasteTransaction *wastetransactionCtrl.Controller, ctrlNotification *notificationCtrl.Controller) {
+// Controllers mengumpulkan semua controller supaya RegisterPath tidak perlu
+// daftar parameter yang terus tumbuh tiap modul baru ditambahkan.
+type Controllers struct {
+	Auth             *authCtrl.Controller
+	User             *userCtrl.Controller
+	Location         *locationCtrl.Controller
+	Category         *categoryCtrl.Controller
+	Price            *priceCtrl.Controller
+	Report           *reportCtrl.Controller
+	Queue            *queueCtrl.Controller
+	Calculator       *calculatorCtrl.Controller
+	WasteTransaction *wastetransactionCtrl.Controller
+	Notification     *notificationCtrl.Controller
+	Wallet           *walletCtrl.Controller
+}
+
+func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers) {
 	e.GET("/ping", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"message": "pong"})
 	})
 
 	jwtMiddleware := middleware.JWTMiddleware2(jwtSecret)
 
-	e.POST("/calculator/simulate", ctrlCalculator.Simulate, jwtMiddleware)
+	// M2 #1, #2 - Auth (publik)
+	e.POST("/auth/register", ctrls.Auth.Register)
+	e.POST("/auth/login", ctrls.Auth.Login)
 
-	e.POST("/queue", ctrlQueue.Create, jwtMiddleware)
-	e.GET("/queue/:id", ctrlQueue.Get, jwtMiddleware)
-	e.GET("/admin/queue", ctrlQueue.AdminList, jwtMiddleware)
-	e.PATCH("/admin/queue/:id/verify", ctrlQueue.AdminVerify, jwtMiddleware)
+	// M2 #4 - Profil (butuh token)
+	e.GET("/users/me", ctrls.User.Me, jwtMiddleware)
+	e.PATCH("/users/me", ctrls.User.UpdateMe, jwtMiddleware)
 
-	e.POST("/admin/waste-transactions", ctrlWasteTransaction.Create, jwtMiddleware)
-	e.GET("/waste-transactions/:id", ctrlWasteTransaction.Get, jwtMiddleware)
-	e.GET("/users/me/waste-transactions", ctrlWasteTransaction.MyHistory, jwtMiddleware)
-	e.GET("/admin/locations/:id/waste-transactions", ctrlWasteTransaction.LocationHistory, jwtMiddleware)
-	e.PATCH("/admin/waste-transactions/:id/status", ctrlWasteTransaction.UpdateStatus, jwtMiddleware)
+	// M3 #5 - CRUD lokasi bank sampah
+	e.GET("/locations", ctrls.Location.List)
+	e.GET("/locations/:id", ctrls.Location.Get)
+	e.POST("/locations", ctrls.Location.Create, jwtMiddleware)
+	e.PATCH("/locations/:id", ctrls.Location.Update, jwtMiddleware)
+	e.DELETE("/locations/:id", ctrls.Location.Delete, jwtMiddleware)
+	// M3 #9 - toggle buka/tutup lokasi
+	e.PATCH("/locations/:id/toggle", ctrls.Location.Toggle, jwtMiddleware)
 
-	e.GET("/users/me/notifications", ctrlNotification.MyNotifications, jwtMiddleware)
+	// M3 #6 - CRUD kategori sampah
+	e.GET("/categories", ctrls.Category.List)
+	e.GET("/categories/:id", ctrls.Category.Get)
+	e.POST("/categories", ctrls.Category.Create, jwtMiddleware)
+	e.PATCH("/categories/:id", ctrls.Category.Update, jwtMiddleware)
+	e.DELETE("/categories/:id", ctrls.Category.Delete, jwtMiddleware)
+
+	// M3 #7 - Manajemen harga dengan histori
+	e.GET("/categories/:id/price", ctrls.Price.ActivePrice)
+	e.GET("/categories/:id/price/history", ctrls.Price.History, jwtMiddleware)
+	e.POST("/categories/:id/price", ctrls.Price.SetPrice, jwtMiddleware)
+
+	// M11 - Laporan transaksi (agregasi per lokasi/tanggal)
+	e.GET("/admin/reports/transactions", ctrls.Report.TransactionReport, jwtMiddleware)
+
+	// M3 #10 - CRUD akun admin/user oleh master admin
+	e.GET("/admin/users", ctrls.User.AdminList, jwtMiddleware)
+	e.POST("/admin/users", ctrls.User.AdminCreate, jwtMiddleware)
+	e.PATCH("/admin/users/:id", ctrls.User.AdminUpdate, jwtMiddleware)
+	e.DELETE("/admin/users/:id", ctrls.User.AdminDelete, jwtMiddleware)
+
+	// M4 - Calculator & Queue
+	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)
+
+	e.POST("/queue", ctrls.Queue.Create, jwtMiddleware)
+	e.GET("/queue/:id", ctrls.Queue.Get, jwtMiddleware)
+	e.GET("/admin/queue", ctrls.Queue.AdminList, jwtMiddleware)
+	e.PATCH("/admin/queue/:id/verify", ctrls.Queue.AdminVerify, jwtMiddleware)
+
+	// M5 - Transaksi Penukaran Sampah
+	e.POST("/admin/waste-transactions", ctrls.WasteTransaction.Create, jwtMiddleware)
+	e.GET("/waste-transactions/:id", ctrls.WasteTransaction.Get, jwtMiddleware)
+	e.GET("/users/me/waste-transactions", ctrls.WasteTransaction.MyHistory, jwtMiddleware)
+	e.GET("/admin/locations/:id/waste-transactions", ctrls.WasteTransaction.LocationHistory, jwtMiddleware)
+	e.PATCH("/admin/waste-transactions/:id/status", ctrls.WasteTransaction.UpdateStatus, jwtMiddleware)
+
+	// M6 - Wallet & Withdraw
+	e.GET("/users/me/wallet", ctrls.Wallet.GetWallet, jwtMiddleware)
+	e.GET("/users/me/wallet/transactions", ctrls.Wallet.GetTransactions, jwtMiddleware)
+	e.POST("/users/me/wallet/withdraw", ctrls.Wallet.Withdraw, jwtMiddleware)
+
+	// M8 - Notifikasi
+	e.GET("/users/me/notifications", ctrls.Notification.MyNotifications, jwtMiddleware)
 }
