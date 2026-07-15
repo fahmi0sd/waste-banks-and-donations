@@ -61,6 +61,12 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.GET("/categories/:id/price/history", ctrls.Price.History, jwtMiddleware)
 	e.POST("/categories/:id/price", ctrls.Price.SetPrice, jwtMiddleware)
 
+	// M3 #10 - CRUD akun admin/user oleh master admin
+	e.GET("/admin/users", ctrls.User.AdminList, jwtMiddleware)
+	e.POST("/admin/users", ctrls.User.AdminCreate, jwtMiddleware)
+	e.PATCH("/admin/users/:id", ctrls.User.AdminUpdate, jwtMiddleware)
+	e.DELETE("/admin/users/:id", ctrls.User.AdminDelete, jwtMiddleware)
+
 	// Calculator & Queue (sudah ada sebelumnya)
 	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)
 
