@@ -14,13 +14,16 @@ import (
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	queueCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/queue"
+	userCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/user"
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	queueRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/queue"
+	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	queueSvc "github.com/fahmi0sd/waste-banks-and-donations/service/queue"
+	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -47,6 +50,11 @@ func main() {
 	aSvc := authSvc.NewService(logger, aRepo, jwtSecret, jwtTTLHours)
 	aCtrl := authCtrl.NewController(logger, aSvc)
 
+	// User / profil (M2 #4)
+	uRepo := userRepo.NewGormRepository(database)
+	uSvc := userSvc.NewService(logger, uRepo)
+	uCtrl := userCtrl.NewController(logger, uSvc)
+
 	// Queue
 	qRepo := queueRepo.NewGormRepository(database)
 	qSvc := queueSvc.NewService(logger, qRepo)
@@ -71,6 +79,7 @@ func main() {
 
 	router.RegisterPath(e, jwtSecret, database, router.Controllers{
 		Auth:       aCtrl,
+		User:       uCtrl,
 		Queue:      qCtrl,
 		Calculator: calcCtrl,
 	})
