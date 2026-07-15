@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
+	backupCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/backup"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
@@ -33,6 +34,7 @@ type Controllers struct {
 	WasteTransaction *wastetransactionCtrl.Controller
 	Notification     *notificationCtrl.Controller
 	Wallet           *walletCtrl.Controller
+	Backup           *backupCtrl.Controller
 }
 
 func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers) {
@@ -102,4 +104,9 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 
 	// M8 - Notifikasi
 	e.GET("/users/me/notifications", ctrls.Notification.MyNotifications, jwtMiddleware)
+
+	// M13 - Backup
+	e.POST("/master-admin/backup/trigger", ctrls.Backup.Trigger, jwtMiddleware)
+	e.GET("/master-admin/backup/history", ctrls.Backup.History, jwtMiddleware)
+
 }

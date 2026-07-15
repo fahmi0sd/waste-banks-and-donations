@@ -15,7 +15,7 @@ func NewGormRepository(db *gorm.DB) *GormRepository {
 	}
 }
 
-// compile time check
+// Compile time check
 var _ backupService.Repository = (*GormRepository)(nil)
 
 func (r *GormRepository) Create(log backupService.BackupLog) (backupService.BackupLog, error) {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/fahmi0sd/go-utils/postgres"
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
+	backupCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/backup"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
@@ -25,6 +26,7 @@ import (
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	"github.com/fahmi0sd/waste-banks-and-donations/pkg"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
+	backupRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/backup"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	categoryRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/category"
 	locationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/location"
@@ -35,7 +37,9 @@ import (
 	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
 	walletRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/wallet"
 	wastetransactionRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/waste-transaction"
+	"github.com/fahmi0sd/waste-banks-and-donations/scheduler"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
+	backupSvc "github.com/fahmi0sd/waste-banks-and-donations/service/backup"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	categorySvc "github.com/fahmi0sd/waste-banks-and-donations/service/category"
 	locationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/location"
@@ -134,6 +138,11 @@ func main() {
 	wSvc := walletSvc.NewService(logger, wRepo)
 	wCtrl := walletCtrl.NewController(logger, wSvc)
 
+	// Backup
+	bRepo := backupRepo.NewGormRepository(database)
+	bSvc := backupSvc.NewService(logger, bRepo, database)
+	bCtrl := backupCtrl.NewController(logger, bSvc)
+
 	// Echo
 	e := echo.New()
 	e.HideBanner = true
@@ -158,6 +167,7 @@ func main() {
 		WasteTransaction: wtCtrl,
 		Notification:     notifCtrl,
 		Wallet:           wCtrl,
+		Backup:           bCtrl,
 	})
 
 	port := os.Getenv("PORT")
@@ -165,6 +175,8 @@ func main() {
 		port = "8080"
 	}
 	addr := ":" + port
+
+	scheduler.StartBackupScheduler(logger, bSvc)
 
 	go func() {
 		if err := e.Start(addr); err != http.ErrServerClosed {
