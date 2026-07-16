@@ -12,6 +12,7 @@ import (
 
 	"github.com/fahmi0sd/go-utils/postgres"
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
+	backupCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/backup"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	campaignCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/campaign"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
@@ -26,6 +27,7 @@ import (
 	"github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/router"
 	"github.com/fahmi0sd/waste-banks-and-donations/pkg"
 	authRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/auth"
+	backupRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/backup"
 	calculatorRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/calculator"
 	categoryRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/category"
 	locationRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/location"
@@ -36,7 +38,9 @@ import (
 	userRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/user"
 	walletRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/wallet"
 	wastetransactionRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/waste-transaction"
+	"github.com/fahmi0sd/waste-banks-and-donations/scheduler"
 	authSvc "github.com/fahmi0sd/waste-banks-and-donations/service/auth"
+	backupSvc "github.com/fahmi0sd/waste-banks-and-donations/service/backup"
 	calculatorSvc "github.com/fahmi0sd/waste-banks-and-donations/service/calculator"
 	categorySvc "github.com/fahmi0sd/waste-banks-and-donations/service/category"
 	locationSvc "github.com/fahmi0sd/waste-banks-and-donations/service/location"
@@ -141,8 +145,13 @@ func main() {
 
 	// Campaign
 	campRepo := campaignRepo.NewGormRepository(database)
-	campSvc := campaignSvc.NewService(logger, campRepo, database)
+	campSvc := campaignSvc.NewService(logger, campRepo, database, notifSvc)
 	campCtrl := campaignCtrl.NewController(logger, campSvc)
+
+	// Backup
+	bRepo := backupRepo.NewGormRepository(database)
+	bSvc := backupSvc.NewService(logger, bRepo, database)
+	bCtrl := backupCtrl.NewController(logger, bSvc)
 
 	// Echo
 	e := echo.New()
@@ -169,6 +178,7 @@ func main() {
 		Notification:     notifCtrl,
 		Wallet:           wCtrl,
 		Campaign:         campCtrl,
+		Backup:           bCtrl,
 	})
 
 	port := os.Getenv("PORT")
@@ -176,6 +186,8 @@ func main() {
 		port = "8080"
 	}
 	addr := ":" + port
+
+	scheduler.StartBackupScheduler(logger, bSvc)
 
 	go func() {
 		if err := e.Start(addr); err != http.ErrServerClosed {

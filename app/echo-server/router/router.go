@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
+	backupCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/backup"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
 	campaignCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/campaign"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
@@ -20,8 +21,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Controllers mengumpulkan semua controller supaya RegisterPath tidak perlu
-// daftar parameter yang terus tumbuh tiap modul baru ditambahkan.
 type Controllers struct {
 	Auth             *authCtrl.Controller
 	User             *userCtrl.Controller
@@ -35,6 +34,7 @@ type Controllers struct {
 	Notification     *notificationCtrl.Controller
 	Wallet           *walletCtrl.Controller
 	Campaign         *campaignCtrl.Controller
+	Backup           *backupCtrl.Controller
 }
 
 func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers) {
@@ -44,45 +44,45 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 
 	jwtMiddleware := middleware.JWTMiddleware2(jwtSecret)
 
-	// M2 #1, #2 - Auth (publik)
+	// Auth
 	e.POST("/auth/register", ctrls.Auth.Register)
 	e.POST("/auth/login", ctrls.Auth.Login)
 
-	// M2 #4 - Profil (butuh token)
+	// Profil
 	e.GET("/users/me", ctrls.User.Me, jwtMiddleware)
 	e.PATCH("/users/me", ctrls.User.UpdateMe, jwtMiddleware)
 
-	// M3 #5 - CRUD lokasi bank sampah
+	// CRUD lokasi bank sampah
 	e.GET("/locations", ctrls.Location.List)
 	e.GET("/locations/:id", ctrls.Location.Get)
 	e.POST("/locations", ctrls.Location.Create, jwtMiddleware)
 	e.PATCH("/locations/:id", ctrls.Location.Update, jwtMiddleware)
 	e.DELETE("/locations/:id", ctrls.Location.Delete, jwtMiddleware)
-	// M3 #9 - toggle buka/tutup lokasi
+	// toggle buka/tutup lokasi
 	e.PATCH("/locations/:id/toggle", ctrls.Location.Toggle, jwtMiddleware)
 
-	// M3 #6 - CRUD kategori sampah
+	// CRUD kategori sampah
 	e.GET("/categories", ctrls.Category.List)
 	e.GET("/categories/:id", ctrls.Category.Get)
 	e.POST("/categories", ctrls.Category.Create, jwtMiddleware)
 	e.PATCH("/categories/:id", ctrls.Category.Update, jwtMiddleware)
 	e.DELETE("/categories/:id", ctrls.Category.Delete, jwtMiddleware)
 
-	// M3 #7 - Manajemen harga dengan histori
+	// Manajemen harga dengan histori
 	e.GET("/categories/:id/price", ctrls.Price.ActivePrice)
 	e.GET("/categories/:id/price/history", ctrls.Price.History, jwtMiddleware)
 	e.POST("/categories/:id/price", ctrls.Price.SetPrice, jwtMiddleware)
 
-	// M11 - Laporan transaksi (agregasi per lokasi/tanggal)
+	// Laporan transaksi (agregasi per lokasi/tanggal)
 	e.GET("/admin/reports/transactions", ctrls.Report.TransactionReport, jwtMiddleware)
 
-	// M3 #10 - CRUD akun admin/user oleh master admin
+	// CRUD akun admin/user oleh master admin
 	e.GET("/admin/users", ctrls.User.AdminList, jwtMiddleware)
 	e.POST("/admin/users", ctrls.User.AdminCreate, jwtMiddleware)
 	e.PATCH("/admin/users/:id", ctrls.User.AdminUpdate, jwtMiddleware)
 	e.DELETE("/admin/users/:id", ctrls.User.AdminDelete, jwtMiddleware)
 
-	// M4 - Calculator & Queue
+	// Calculator & Queue
 	e.POST("/calculator/simulate", ctrls.Calculator.Simulate, jwtMiddleware)
 
 	e.POST("/queue", ctrls.Queue.Create, jwtMiddleware)
@@ -90,19 +90,19 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.GET("/admin/queue", ctrls.Queue.AdminList, jwtMiddleware)
 	e.PATCH("/admin/queue/:id/verify", ctrls.Queue.AdminVerify, jwtMiddleware)
 
-	// M5 - Transaksi Penukaran Sampah
+	// Waste Transaction
 	e.POST("/admin/waste-transactions", ctrls.WasteTransaction.Create, jwtMiddleware)
 	e.GET("/waste-transactions/:id", ctrls.WasteTransaction.Get, jwtMiddleware)
 	e.GET("/users/me/waste-transactions", ctrls.WasteTransaction.MyHistory, jwtMiddleware)
 	e.GET("/admin/locations/:id/waste-transactions", ctrls.WasteTransaction.LocationHistory, jwtMiddleware)
 	e.PATCH("/admin/waste-transactions/:id/status", ctrls.WasteTransaction.UpdateStatus, jwtMiddleware)
 
-	// M6 - Wallet & Withdraw
+	// Wallet & Withdraw
 	e.GET("/users/me/wallet", ctrls.Wallet.GetWallet, jwtMiddleware)
 	e.GET("/users/me/wallet/transactions", ctrls.Wallet.GetTransactions, jwtMiddleware)
 	e.POST("/users/me/wallet/withdraw", ctrls.Wallet.Withdraw, jwtMiddleware)
 
-	// M7 Campaigns
+	// Campaigns
 	// Public
 	e.GET("/campaigns", ctrls.Campaign.List)
 	e.GET("/campaigns/:id", ctrls.Campaign.Get)
@@ -116,6 +116,11 @@ func RegisterPath(e *echo.Echo, jwtSecret string, db *gorm.DB, ctrls Controllers
 	e.POST("/campaigns/:id/donate", ctrls.Campaign.Donate, jwtMiddleware)
 	e.GET("/users/me/donations", ctrls.Campaign.MyDonations, jwtMiddleware)
 
-	// M8 - Notifikasi
+	// Notification
 	e.GET("/users/me/notifications", ctrls.Notification.MyNotifications, jwtMiddleware)
+
+	// Backup
+	e.POST("/master-admin/backup/trigger", ctrls.Backup.Trigger, jwtMiddleware)
+	e.GET("/master-admin/backup/history", ctrls.Backup.History, jwtMiddleware)
+
 }
