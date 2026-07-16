@@ -1,0 +1,19 @@
+services:
+  banksampah-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: banksampah-api
+    env_file:
+      - .env
+    environment:
+      DB_SSLMODE: require
+      BACKUP_DIR: /backup
+    ports:
+      - "9025:8080"
+    restart: always
+    volumes:
+      - backup_data:/backup
+
+volumes:
+  backup_data:
