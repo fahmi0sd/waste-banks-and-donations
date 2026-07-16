@@ -20,4 +20,6 @@ type Repository interface {
 	CreateDonation(tx *gorm.DB, donation Donation) (Donation, error)
 	IncreaseCampaignAmount(tx *gorm.DB, campaignID int, amount float64) error
 	MyDonations(userID int) ([]Donation, error)
+
+	DonorUserIDs(campaignID int) ([]int, error)
 }

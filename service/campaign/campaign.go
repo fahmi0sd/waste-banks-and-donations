@@ -44,7 +44,7 @@ type UpdateRequest struct {
 	Status       string  `json:"status"`
 }
 
-func (r CreateRequest) Validate() error {
+func (r *CreateRequest) Validate() error {
 	if r.Title == "" {
 		return errors.New("title wajib diisi")
 	}

@@ -161,6 +161,8 @@ CREATE TABLE IF NOT EXISTS notification_log (
 -- Create table backup_log 
 CREATE TABLE IF NOT EXISTS backup_log (
     id                   SERIAL PRIMARY KEY,
+    file_name            VARCHAR(255),
+    file_path            TEXT,
     triggered_by         VARCHAR(10) NOT NULL
                          CHECK (triggered_by IN ('scheduler', 'manual')),
     triggered_by_user_id INT REFERENCES users(id),
