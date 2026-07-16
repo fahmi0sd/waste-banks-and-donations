@@ -14,6 +14,7 @@ import (
 	authCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/auth"
 	backupCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/backup"
 	calculatorCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/calculator"
+	campaignCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/campaign"
 	categoryCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/category"
 	locationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/location"
 	notificationCtrl "github.com/fahmi0sd/waste-banks-and-donations/app/echo-server/controller/notification"
@@ -50,6 +51,10 @@ import (
 	userSvc "github.com/fahmi0sd/waste-banks-and-donations/service/user"
 	walletSvc "github.com/fahmi0sd/waste-banks-and-donations/service/wallet"
 	wastetransactionSvc "github.com/fahmi0sd/waste-banks-and-donations/service/waste-transaction"
+
+	campaignRepo "github.com/fahmi0sd/waste-banks-and-donations/repository/campaign"
+
+	campaignSvc "github.com/fahmi0sd/waste-banks-and-donations/service/campaign"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -138,6 +143,11 @@ func main() {
 	wSvc := walletSvc.NewService(logger, wRepo)
 	wCtrl := walletCtrl.NewController(logger, wSvc)
 
+	// Campaign
+	campRepo := campaignRepo.NewGormRepository(database)
+	campSvc := campaignSvc.NewService(logger, campRepo, database, notifSvc)
+	campCtrl := campaignCtrl.NewController(logger, campSvc)
+
 	// Backup
 	bRepo := backupRepo.NewGormRepository(database)
 	bSvc := backupSvc.NewService(logger, bRepo, database)
@@ -167,6 +177,7 @@ func main() {
 		WasteTransaction: wtCtrl,
 		Notification:     notifCtrl,
 		Wallet:           wCtrl,
+		Campaign:         campCtrl,
 		Backup:           bCtrl,
 	})
 
