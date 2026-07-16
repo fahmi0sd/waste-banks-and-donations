@@ -12,7 +12,7 @@ import (
 type Service interface {
 	Trigger(masterAdminID int) (BackupLog, error)
 	TriggerScheduler() error
-	History() ([]BackupLog, error)
+	History(requesterID int) ([]BackupLog, error)
 }
 
 type service struct {
@@ -61,7 +61,16 @@ func (s *service) TriggerScheduler() error {
 	return err
 }
 
-func (s *service) History() ([]BackupLog, error) {
+func (s *service) History(requesterID int) ([]BackupLog, error) {
+
+	identity, err := pkg.GetUserIdentity(s.db, requesterID)
+	if err != nil {
+		return nil, errors.New("gagal memverifikasi user")
+	}
+
+	if identity.Role != "master_admin" {
+		return nil, errors.New("akses ditolak")
+	}
 
 	return s.repo.History()
 }

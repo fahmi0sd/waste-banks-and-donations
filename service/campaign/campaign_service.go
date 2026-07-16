@@ -22,17 +22,23 @@ type Service interface {
 	MyDonations(userID int) ([]Donation, error)
 }
 
-type service struct {
-	logger *slog.Logger
-	repo   Repository
-	db     *gorm.DB
+type NotificationSender interface {
+	NotifyDonationUpdate(userID int, campaignTitle, updateContent string) error
 }
 
-func NewService(logger *slog.Logger, repo Repository, db *gorm.DB) Service {
+type service struct {
+	logger   *slog.Logger
+	repo     Repository
+	db       *gorm.DB
+	notifier NotificationSender
+}
+
+func NewService(logger *slog.Logger, repo Repository, db *gorm.DB, notifier NotificationSender) Service {
 	return &service{
-		logger: logger,
-		repo:   repo,
-		db:     db,
+		logger:   logger,
+		repo:     repo,
+		db:       db,
+		notifier: notifier,
 	}
 }
 
@@ -156,7 +162,7 @@ func (s *service) CreateUpdate(masterAdminID int, campaignID int, req CreateUpda
 		return CampaignUpdate{}, err
 	}
 
-	_, err = s.repo.Get(campaignID)
+	campaign, err := s.repo.Get(campaignID)
 	if err != nil {
 		return CampaignUpdate{}, err
 	}
@@ -174,6 +180,19 @@ func (s *service) CreateUpdate(masterAdminID int, campaignID int, req CreateUpda
 		return CampaignUpdate{}, err
 	}
 
+	if s.notifier != nil {
+		donorIDs, err := s.repo.DonorUserIDs(campaignID)
+		if err != nil {
+			s.logger.Error("failed to fetch donor list for notification", "error", err, "campaign_id", campaignID)
+		} else {
+			for _, donorID := range donorIDs {
+				if notifErr := s.notifier.NotifyDonationUpdate(donorID, campaign.Title, req.Content); notifErr != nil {
+					s.logger.Error("failed to send donation update notification", "error", notifErr, "user_id", donorID, "campaign_id", campaignID)
+				}
+			}
+		}
+	}
+
 	return result, nil
 }
 
@@ -182,10 +201,12 @@ func (s *service) Donate(userID int, campaignID int, req DonateRequest) error {
 		return err
 	}
 
-	// pastikan campaign ada
-	_, err := s.repo.Get(campaignID)
+	campaign, err := s.repo.Get(campaignID)
 	if err != nil {
 		return err
+	}
+	if campaign.Status != StatusActive {
+		return errors.New("campaign ini sedang tidak menerima donasi")
 	}
 
 	return s.db.Transaction(func(tx *gorm.DB) error {

@@ -58,17 +58,20 @@ func (ctrl *Controller) Trigger(c echo.Context) error {
 
 func (ctrl *Controller) History(c echo.Context) error {
 
-	result, err := ctrl.service.History()
+	userID := auth.UserID(c)
+
+	result, err := ctrl.service.History(userID)
 
 	if err != nil {
 
 		ctrl.logger.Error(
 			"failed get backup history",
+			"user_id", userID,
 			"error", err,
 		)
 
 		return c.JSON(
-			http.StatusInternalServerError,
+			http.StatusBadRequest,
 			response.Error(err.Error()),
 		)
 

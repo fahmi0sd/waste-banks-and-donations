@@ -56,3 +56,15 @@ func (r *GormRepository) MyDonations(userID int) ([]campaignService.Donation, er
 	}
 	return donations, nil
 }
+
+func (r *GormRepository) DonorUserIDs(campaignID int) ([]int, error) {
+	var ids []int
+	err := r.db.Model(&campaignService.Donation{}).
+		Where("campaign_id = ?", campaignID).
+		Distinct("user_id").
+		Pluck("user_id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
