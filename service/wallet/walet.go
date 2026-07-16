@@ -26,3 +26,10 @@ type WalletTransaction struct {
 func (WalletTransaction) TableName() string {
 	return "wallet_transaction"
 }
+
+const (
+	TransactionCreditWaste  = "credit_waste"
+	TransactionDonationOut  = "donation_out"
+	TransactionWithdraw     = "withdraw"
+	TransactionCancellation = "cancellation"
+)
