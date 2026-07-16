@@ -28,24 +28,19 @@ REST API untuk platform bank sampah multi-lokasi yang terintegrasi dengan donasi
 
 ## Database: Supabase
 
-Project ini pakai [Supabase](https://supabase.com) (Postgres terkelola) sebagai database — bukan Postgres lokal. Konsekuensinya:
-- `docker-compose.yaml` cuma menjalankan **satu service** (API-nya saja) — tidak ada container database, karena databasenya sudah ada di cloud
-- Koneksi ke Supabase **selalu lewat SSL** (`sslmode=require`) — ini otomatis didukung Supabase tanpa setup tambahan apa pun, jadi tidak perlu ubah apa pun di `go-utils`
-- Skema (`sql/ddl.sql`) **tidak** ter-load otomatis lewat Docker seperti kalau pakai Postgres lokal — jalankan manual sekali di awal lewat SQL Editor di Supabase Dashboard, atau lewat `psql` (lihat bawah)
+Project ini pakai [Supabase](https://supabase.com) (Postgres terkelola) sebagai database.
 
-### Load Skema ke Supabase (Sekali di Awal)
+### Load Skema ke Supabase 
 
-**Opsi A — lewat Dashboard** (paling gampang): buka Supabase Dashboard → SQL Editor → paste isi `sql/ddl.sql` → Run.
+**Opsi A — lewat Dashboard** : buka Supabase Dashboard → SQL Editor → paste isi `sql/ddl.sql` → Run.
 
-**Opsi B — lewat psql** (kalau sudah install `postgresql-client` di mesin kalian):
+**Opsi B — lewat psql** (kalau sudah install `postgresql-client`):
 ```bash
 psql "postgresql://postgres.xxxxxxxxxxxx:[PASSWORD]@aws-0-[region].pooler.supabase.com:5432/postgres" -f sql/ddl.sql
 ```
 Ambil connection string persis dari Supabase Dashboard → Connect → Session pooler.
 
-Untuk perubahan skema berikutnya (kolom/tabel baru), jalankan ulang dengan cara yang sama — ingat semua `CREATE TABLE` pakai `IF NOT EXISTS` jadi aman dijalankan berkali-kali, tapi kolom baru di tabel yang **sudah ada** butuh `ALTER TABLE` manual, bukan sekadar re-run `ddl.sql`.
-
-## Menjalankan dengan Docker (Cara Tercepat)
+## Menjalankan dengan Docker
 
 ### Prasyarat
 - Docker & Docker Compose terpasang
@@ -69,7 +64,7 @@ curl http://localhost:8080/ping
 # {"message":"pong"}
 ```
 
-## Menjalankan Tanpa Docker (Manual)
+## Menjalankan Tanpa Docker
 
 ### Prasyarat
 - Go 1.25.5+
@@ -106,8 +101,6 @@ go run ./app/echo-server
 | `BACKUP_DIR` | Tidak | `backup` | **Kalau tidak pakai Docker**, sebaiknya arahkan ke path di luar folder project (lihat catatan di bawah) |
 | `BACKUP_KEEP` | Tidak | `30` | Jumlah file backup terakhir yang disimpan sebelum yang lebih lama dihapus otomatis |
 
-⚠️ **Soal `BACKUP_DIR`**: kalau jalankan **lewat Docker**, ini sudah otomatis diarahkan ke named volume terpisah (`backup_data`) lewat `docker-compose.yaml` — file backup tetap ada meski container di-restart, dan tidak akan pernah nyasar ke source tree/git. Kalau jalankan **tanpa Docker**, JANGAN biarkan default `backup` (path relatif) tanpa memastikan folder itu sudah masuk `.gitignore` — ini pernah menyebabkan file dump database ke-*commit* ke repo. `.gitignore` di project ini sudah menutup itu, tapi tetap disarankan pakai path absolut di luar folder project untuk keamanan berlapis, misalnya `BACKUP_DIR=/var/backups/banksampah`.
-
 ## Struktur Project
 
 ```
@@ -125,7 +118,6 @@ scheduler/                 # cron job (backup otomatis)
 sql/ddl.sql                # skema database (satu-satunya sumber kebenaran skema)
 ```
 
-Tiap domain konsisten mengikuti pola: `service/{domain}/{domain}_repo.go` (interface) → `repository/{domain}/{domain}_repository.go` (implementasi GORM) → `app/echo-server/controller/{domain}/{domain}.go` (HTTP handler). Dependency antar-domain (misal transaksi sampah memicu notifikasi) selalu lewat interface kecil yang didefinisikan di sisi pemanggil, bukan import langsung — supaya tetap loosely-coupled.
 
 ## Testing
 
@@ -133,10 +125,6 @@ Tiap domain konsisten mengikuti pola: `service/{domain}/{domain}_repo.go` (inter
 ```bash
 go test ./...
 ```
-Cakupan saat ini masih terbatas (`pkg/mailjet_test.go`) — perlu ditambah untuk modul lain, terutama alur atomic seperti transaksi sampah dan withdraw wallet.
-
-### Testing API (Postman)
-Collection Postman untuk testing manual/end-to-end tersedia terpisah dari sesi kerja tim — hubungi Lead untuk file collection terbaru, atau lihat dokumentasi endpoint di bawah.
 
 ## Autentikasi
 
